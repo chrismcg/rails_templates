@@ -12,15 +12,15 @@ like:
 --skip-bundle
 ```
 
-I prefer starting with PostgreSQL, the template installs RSpec so don't need
-test-unit and bundler is run when we need it to.
+I prefer starting with PostgreSQL, the template installs RSpec so test-unit
+isn't needed, and bundler is run when we need it to.
 
 default.rb
 ==========
 
 Inspired (and mostly taken from) [Starting a new Rails
 project](https://woss.name/articles/starting-a-new-rails-project/). Thanks
-@mathie!
+[@mathie](https://github.com/mathie)!
 
 * RSpec
 * Capybara
