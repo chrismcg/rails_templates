@@ -29,9 +29,12 @@ git commit: %Q{ -m "Remove turbolinks" }
 
 ######### Set ruby version
 
-run "echo #{RUBY_VERSION} >> .ruby-version"
-run 'sed -i \'\' \'s/^source.*$/&\
-ruby File.read(File.expand_path("..\/.ruby-version", __FILE__)).chomp/\' Gemfile'
+create_file ".ruby-version" do
+  "#{RUBY_VERSION}\n"
+end
+inject_into_file "Gemfile", after: /^source.*\n/ do
+ %(ruby File.read(File.expand_path("../.ruby-version", __FILE__)).chomp)
+end
 
 git add: "."
 git commit: %Q{ -m "Set ruby version to #{RUBY_VERSION}" }
@@ -52,13 +55,17 @@ git commit: %Q{ -m "Add utility gems" }
 
 gem "puma"
 run "bundle install"
-run "cp #{File.join(File.dirname(__FILE__), 'webserver_config', 'puma.rb')} config/puma.rb"
+copy_file File.expand_path('../webserver_config/puma.rb', __FILE__), "config/puma.rb"
 
 # Configure dev for just one worker
-run "echo 'PUMA_WORKERS=1' >> .env"
+create_file ".env" do
+  "PUMA_WORKERS=1\n"
+end
 
 # Configure foreman
-run "echo 'web: bundle exec puma --config config/puma.rb' >> Procfile"
+create_file "Procfile" do
+  "web: bundle exec puma --config config/puma.rb\n"
+end
 
 git add: "."
 git commit: %Q{ -m "Add Puma" }
@@ -76,7 +83,7 @@ generate "rspec:install"
 run "spring binstub --all"
 
 # filter out =begin and =end in rspec helper to get the defaults
-run "sed -E -i '' '/=(begin|end)/d' spec/spec_helper.rb"
+gsub_file "spec/spec_helper.rb", /^=(begin|end)$/, ""
 
 git add: "."
 git commit: %Q{ -m "Add rspec and capybara" }
@@ -90,7 +97,7 @@ end
 
 run "bundle install"
 run "bundle exec guard init bundler rspec"
-run "sed -i '' 's/bundle exec rspec/bin\\/rspec/' Guardfile"
+gsub_file "Guardfile", "bundle exec rspec", "bin/rspec"
 
 git add: "."
 git commit: %Q{ -m "Add guard" }
@@ -99,7 +106,7 @@ git commit: %Q{ -m "Add guard" }
 
 run "cp -r #{File.expand_path('../code/pages_controller/spec/*', __FILE__)} spec/"
 run "cp -r #{File.expand_path('../code/pages_controller/app/*', __FILE__)} app/"
-run "sed -i '' \"s/# root 'welcome/root 'pages/\" config/routes.rb"
+gsub_file "config/routes.rb", "# root 'welcome", "root 'pages"
 
 git add: "."
 git commit: %Q{ -m "Add pages controller" }
@@ -111,12 +118,17 @@ gem "autoprefixer-rails"
 
 run "bundle install"
 
-run "mv app/assets/stylesheets/application.css app/assets/stylesheets/application.css.scss"
-run 'echo "@import \"bootstrap-sprockets\";" >> app/assets/stylesheets/application.css.scss'
-run 'echo "@import \"bootstrap\";" >> app/assets/stylesheets/application.css.scss'
-run 'sed -i \'\' \'s/.*require jquery$/&\
-\/\/= require bootstrap-sprockets/\' app/assets/javascripts/application.js'
-run "cp #{File.expand_path('../bootstrap_templates/default.html.erb', __FILE__)} app/views/layouts/application.html.erb"
+FileUtils.mv "app/assets/stylesheets/application.css", "app/assets/stylesheets/application.css.scss"
+inject_into_file "app/assets/stylesheets/application.css.scss", after: " */\n" do <<-CSS
+@import "bootstrap-sprockets";
+@import "bootstrap";
+CSS
+end
+insert_into_file "app/assets/javascripts/application.js", after: /.*require jquery\n/ do
+  "//= require bootstrap-sprockets\n"
+end
+# Use cp rather than copy_file here otherwise we get asked if we really want to
+FileUtils.cp File.expand_path('../bootstrap_templates/default.html.erb', __FILE__), "app/views/layouts/application.html.erb"
 
 git add: "."
 git commit: %Q{ -m "Add bootstrap" }
