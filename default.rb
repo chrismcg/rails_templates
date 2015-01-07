@@ -128,7 +128,7 @@ insert_into_file "app/assets/javascripts/application.js", after: /.*require jque
   "//= require bootstrap-sprockets\n"
 end
 # Use cp rather than copy_file here otherwise we get asked if we really want to
-FileUtils.cp File.expand_path('../bootstrap_templates/default.html.erb', __FILE__), "app/views/layouts/application.html.erb"
+run "cp -r #{File.expand_path('../bootstrap_templates/*', __FILE__)} ."
 
 git add: "."
 git commit: %Q{ -m "Add bootstrap" }
